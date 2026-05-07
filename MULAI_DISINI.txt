@@ -1,0 +1,78 @@
+================================================================================
+                        SELAMAT DATANG DI API-ABSENIN
+================================================================================
+
+Ini adalah project API untuk sistem absensi mahasiswa.
+
+LANGKAH PERTAMA KALI:
+---------------------
+
+1. Pastikan Anda sudah install:
+   - Python 3.8 atau lebih baru
+   - MySQL Server
+   - Git (untuk clone project)
+
+2. Jalankan setup:
+   
+   setup.bat
+
+3. Edit file .env dan sesuaikan dengan konfigurasi database Anda
+
+4. Buat database di MySQL:
+   
+   CREATE DATABASE absenin;
+
+5. Jalankan migration:
+   
+   run_migration.bat
+
+6. (Opsional) Isi database dengan data contoh:
+   
+   run_seed.bat
+
+7. Jalankan server:
+   
+   run_server.bat
+
+8. Buka browser dan akses:
+   
+   http://localhost:8000/docs
+
+
+JIKA PINDAH DEVICE / CLONE BARU:
+--------------------------------
+
+1. JANGAN copy folder venv/ (sudah di .gitignore)
+2. Jalankan setup.bat untuk membuat venv baru
+3. Edit .env sesuai konfigurasi lokal
+4. Jalankan run_migration.bat
+5. Jalankan run_server.bat
+
+
+DOKUMENTASI:
+-----------
+
+- README.md          : Dokumentasi lengkap
+- QUICKSTART.md      : Panduan cepat
+- TROUBLESHOOTING.md : Solusi masalah umum
+
+
+SCRIPT HELPER:
+-------------
+
+setup.bat                    : Setup awal project
+run_migration.bat            : Jalankan database migrations
+create_migration.bat "nama"  : Buat migration baru
+run_seed.bat                 : Seed database dengan data contoh
+run_server.bat               : Jalankan development server
+
+
+BUTUH BANTUAN?
+-------------
+
+Lihat file TROUBLESHOOTING.md untuk solusi masalah umum.
+
+
+================================================================================
+                    Selamat coding! 🚀
+================================================================================

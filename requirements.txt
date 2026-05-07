@@ -5,3 +5,7 @@ pymysql
 alembic
 passlib[bcrypt]
 pydantic
+pydantic-settings
+python-dotenv
+python-jose[cryptography]
+python-multipart

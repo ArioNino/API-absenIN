@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 class Mahasiswa(Base):
@@ -9,3 +10,7 @@ class Mahasiswa(Base):
     nama = Column(String(100))
     kelas = Column(String(100))
     prodi = Column(String(100))
+    
+    # Relationships
+    kehadiran = relationship("Kehadiran", back_populates="mahasiswa")
+    kelas_mahasiswa = relationship("KelasMahasiswa", back_populates="mahasiswa")

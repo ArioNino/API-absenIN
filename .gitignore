@@ -3,11 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Virtual environments
+# Virtual environments (JANGAN COMMIT!)
 venv/
 .venv/
 ENV/
 env/
+Scripts/
+Lib/
+Include/
+pyvenv.cfg
 
 # Distribution / packaging
 build/
@@ -36,13 +40,16 @@ pip-delete-this-directory.txt
 
 # Windows
 Thumbs.db
+desktop.ini
 
 # SQLite
 *.sqlite3
+*.db
 
-# env files
+# env files (JANGAN COMMIT!)
 .env
 .env.*
+!.env.example
 
 # Alembic version table is tracked in DB; keep migrations in repo
 # Ignore compiled C extensions
@@ -50,3 +57,21 @@ Thumbs.db
 
 # Logs
 *.log
+*.log.*
+
+# Kilo
+.kilo/plans/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 class Kelas(Base):
@@ -10,3 +11,8 @@ class Kelas(Base):
     tahun_ajaran = Column(String(20), nullable=False)
 
     kode_mk = Column(String(10), ForeignKey("mata_kuliah.kode_mk"), nullable=False)
+    
+    # Relationships
+    mata_kuliah = relationship("MataKuliah", back_populates="kelas")
+    berita_acara = relationship("BeritaAcaraPerkuliahan", back_populates="kelas")
+    kelas_mahasiswa = relationship("KelasMahasiswa", back_populates="kelas")
