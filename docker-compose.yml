@@ -1,0 +1,66 @@
+# Docker Compose untuk Development
+version: '3.8'
+
+services:
+  # MySQL Database
+  db:
+    image: mysql:8.0
+    container_name: absenin_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root123}
+      MYSQL_DATABASE: ${DB_NAME:-absenin}
+      MYSQL_USER: ${DB_USER:-absenin_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root123}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - absenin_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # FastAPI Application
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: absenin_api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: mysql+pymysql://${DB_USER:-absenin_user}:${DB_PASSWORD:-root123}@db:3306/${DB_NAME:-absenin}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      APP_NAME: AbsenIN API
+      APP_DEBUG: ${DEBUG:-True}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - absenin_network
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 10 &&
+        echo 'Running migrations...' &&
+        alembic upgrade head &&
+        echo 'Starting server...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  absenin_network:
+    driver: bridge

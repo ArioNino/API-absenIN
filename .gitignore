@@ -50,6 +50,8 @@ desktop.ini
 .env
 .env.*
 !.env.example
+!.env.docker
+!.env.production
 
 # Alembic version table is tracked in DB; keep migrations in repo
 # Ignore compiled C extensions
@@ -58,6 +60,7 @@ desktop.ini
 # Logs
 *.log
 *.log.*
+logs/
 
 # Kilo
 .kilo/plans/
@@ -75,3 +78,14 @@ htmlcov/
 .coverage.*
 coverage.xml
 *.cover
+
+# Docker
+.dockerignore
+
+# Documentation (generated)
+*.md.backup
+
+# Test files
+test_*.py
+*_test.py
+token.txt
