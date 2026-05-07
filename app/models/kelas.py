@@ -9,4 +9,4 @@ class Kelas(Base):
     semester = Column(Integer, nullable=False)
     tahun_ajaran = Column(String(20), nullable=False)
 
-    kode_mk = Column(String(10), ForeignKey("matakuliah.kode_mk"), nullable=False)
+    kode_mk = Column(String(10), ForeignKey("mata_kuliah.kode_mk"), nullable=False)
