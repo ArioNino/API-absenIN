@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date
-
+from datetime import date, time
 
 class BeritaAcaraBase(BaseModel):
     id_dosen: int
@@ -9,6 +8,8 @@ class BeritaAcaraBase(BaseModel):
     id_mata_kuliah: str
     pertemuan_ke: int
     tanggal: date
+    waktu_mulai: time
+    waktu_selesai: time
     materi: str
     catatan: Optional[str] = None
 

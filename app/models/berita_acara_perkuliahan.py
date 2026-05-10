@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Date, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, Date, Time, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -9,6 +9,8 @@ class BeritaAcaraPerkuliahan(Base):
     id_dosen = Column(Integer, ForeignKey("dosen.id"), nullable=False)
     id_kelas = Column(Integer, ForeignKey("kelas.id"), nullable=False)
     id_mata_kuliah = Column(String(10), ForeignKey("mata_kuliah.kode_mk"), nullable=False)
+    waktu_mulai = Column(Time, nullable=False)
+    waktu_selesai = Column(Time, nullable=False)
     pertemuan_ke = Column(Integer, nullable=False)
     tanggal = Column(Date, nullable=False)
     materi = Column(String(255), nullable=False)

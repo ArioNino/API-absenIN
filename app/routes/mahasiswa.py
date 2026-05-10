@@ -37,7 +37,7 @@ def get_mahasiswa(
     """Get a specific mahasiswa by ID."""
     mahasiswa = db.query(Mahasiswa).filter(Mahasiswa.id_mahasiswa == mahasiswa_id).first()
     if not mahasiswa:
-        raise HTTPException(
+        raise HTTPException(    
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Mahasiswa tidak ditemukan"
         )
