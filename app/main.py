@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 
 # Import routers
-from app.routes import auth, mahasiswa, matakuliah
+from app.routes import auth, mahasiswa, matakuliah, kelas, berita_acara
 
 settings = get_settings()
 
@@ -26,6 +26,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(mahasiswa.router)
 app.include_router(matakuliah.router)
+app.include_router(kelas.router)
+app.include_router(berita_acara.router)
 
 @app.get("/")
 def read_root():
