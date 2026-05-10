@@ -4,7 +4,6 @@ from typing import List
 
 from app.database import get_db
 from app.models.kelas import Kelas
-from app.models.matakuliah import MataKuliah
 from app.models.user import User
 
 from app.schemas.kelas import (
@@ -26,7 +25,7 @@ def get_all_kelas(
     current_user: User = Depends(get_current_user)
 ):
     """Get all kelas with pagination."""
-    
+
     kelas = db.query(Kelas).offset(skip).limit(limit).all()
     return kelas
 
@@ -58,17 +57,6 @@ def create_kelas(
 ):
     """Create a new kelas."""
 
-    # Check mata kuliah exists
-    mata_kuliah = db.query(MataKuliah).filter(
-        MataKuliah.kode_mk == kelas_data.kode_mk
-    ).first()
-
-    if not mata_kuliah:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Mata kuliah tidak ditemukan"
-        )
-
     kelas = Kelas(**kelas_data.model_dump())
 
     db.add(kelas)
@@ -97,28 +85,23 @@ def update_kelas(
 
     update_data = kelas_data.model_dump(exclude_unset=True)
 
-    # Dirty check
+    # Dirty check: empty payload
     if not update_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tidak ada data yang diupdate"
+            detail="Tidak ada data yang diupdate. Minimal satu field harus diisi."
         )
 
-    # Check mata kuliah exists if kode_mk updated
-    if "kode_mk" in update_data:
-        mata_kuliah = db.query(MataKuliah).filter(
-            MataKuliah.kode_mk == update_data["kode_mk"]
-        ).first()
-
-        if not mata_kuliah:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Mata kuliah tidak ditemukan"
-            )
-
-    # Update fields
+    # Check if any field actually changed
+    has_changes = False
     for field, value in update_data.items():
-        setattr(kelas, field, value)
+        if getattr(kelas, field) != value:
+            has_changes = True
+            setattr(kelas, field, value)
+
+    if not has_changes:
+        # Idempotent no-op: payload matches current state, nothing to persist.
+        return kelas
 
     db.commit()
     db.refresh(kelas)

@@ -11,5 +11,4 @@ class MataKuliah(Base):
     semester = Column(Integer, nullable=False)
     
     # Relationships
-    kelas = relationship("Kelas", back_populates="mata_kuliah")
     berita_acara = relationship("BeritaAcaraPerkuliahan", back_populates="mata_kuliah")

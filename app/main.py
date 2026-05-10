@@ -3,11 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 
 # Import routers
-<<<<<<< Updated upstream
-from app.routes import auth, mahasiswa, matakuliah, kelas, berita_acara
-=======
-from app.routes import auth, mahasiswa, matakuliah, berita_acara, kehadiran
->>>>>>> Stashed changes
+from app.routes import auth, mahasiswa, matakuliah, berita_acara, kehadiran, kelas
 
 settings = get_settings()
 
@@ -52,6 +48,7 @@ def read_root():
             "login": "/auth/login",
             "mahasiswa": "/mahasiswa",
             "matakuliah": "/matakuliah",
+            "kelas": "/kelas",
             "berita_acara": "/berita-acara",
             "kehadiran": "/kehadiran"
         }
