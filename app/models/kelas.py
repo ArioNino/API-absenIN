@@ -16,3 +16,4 @@ class Kelas(Base):
     mata_kuliah = relationship("MataKuliah", back_populates="kelas")
     berita_acara = relationship("BeritaAcaraPerkuliahan", back_populates="kelas")
     kelas_mahasiswa = relationship("KelasMahasiswa", back_populates="kelas")
+    kelas_dosen = relationship("Kelas_dosen", back_populates="kelas")

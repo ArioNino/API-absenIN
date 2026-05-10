@@ -3,7 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 
 # Import routers
+<<<<<<< Updated upstream
 from app.routes import auth, mahasiswa, matakuliah, kelas, berita_acara
+=======
+from app.routes import auth, mahasiswa, matakuliah, berita_acara, kehadiran
+>>>>>>> Stashed changes
 
 settings = get_settings()
 
@@ -14,10 +18,14 @@ app = FastAPI(
 )
 
 # CORS middleware
+# NOTE: browsers reject allow_origins=["*"] together with allow_credentials=True,
+# so we disable credentials when the origin list is wildcard.
+_cors_origins = settings.CORS_ORIGINS_LIST
+_allow_credentials = _cors_origins != ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_cors_origins,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -28,6 +36,7 @@ app.include_router(mahasiswa.router)
 app.include_router(matakuliah.router)
 app.include_router(kelas.router)
 app.include_router(berita_acara.router)
+app.include_router(kehadiran.router)
 
 @app.get("/")
 def read_root():
@@ -42,7 +51,9 @@ def read_root():
             "docs": "/docs",
             "login": "/auth/login",
             "mahasiswa": "/mahasiswa",
-            "matakuliah": "/matakuliah"
+            "matakuliah": "/matakuliah",
+            "berita_acara": "/berita-acara",
+            "kehadiran": "/kehadiran"
         }
     }
 

@@ -122,10 +122,24 @@ def update_kehadiran(
             detail="Kehadiran tidak ditemukan"
         )
     
-    # Update fields
+    # Check if there's any data to update (dirty check)
     update_data = kehadiran_data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tidak ada data yang diupdate. Minimal satu field harus diisi."
+        )
+    
+    # Check if any field actually changed
+    has_changes = False
     for field, value in update_data.items():
-        setattr(kehadiran, field, value)
+        if getattr(kehadiran, field) != value:
+            has_changes = True
+            setattr(kehadiran, field, value)
+    
+    if not has_changes:
+        # Idempotent no-op: payload matches current state, nothing to persist.
+        return kehadiran
     
     db.commit()
     db.refresh(kehadiran)

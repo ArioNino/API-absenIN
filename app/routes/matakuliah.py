@@ -101,9 +101,10 @@ def update_matakuliah(
             setattr(matakuliah, field, value)
     
     if not has_changes:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Tidak ada perubahan data. Data yang dikirim sama dengan data yang ada."
+        # Idempotent no-op: payload matches current state, nothing to persist.
+        return MessageResponse(
+            message="Tidak ada perubahan data. Data yang dikirim sama dengan data yang ada.",
+            data=MataKuliahResponse.model_validate(matakuliah)
         )
     
     db.commit()

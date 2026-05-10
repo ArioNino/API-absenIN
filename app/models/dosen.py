@@ -12,3 +12,4 @@ class Dosen(Base):
     # Relationships
     user = relationship("User", back_populates="dosen")
     berita_acara = relationship("BeritaAcaraPerkuliahan", back_populates="dosen")
+    kelas_dosen = relationship("Kelas_dosen", back_populates="dosen")

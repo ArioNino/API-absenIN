@@ -137,10 +137,24 @@ def update_berita_acara(
             detail="Berita Acara tidak ditemukan"
         )
     
-    # Update fields
+    # Check if there's any data to update (dirty check)
     update_data = bap_data.model_dump(exclude_unset=True)
+    if not update_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Tidak ada data yang diupdate. Minimal satu field harus diisi."
+        )
+    
+    # Check if any field actually changed
+    has_changes = False
     for field, value in update_data.items():
-        setattr(berita_acara, field, value)
+        if getattr(berita_acara, field) != value:
+            has_changes = True
+            setattr(berita_acara, field, value)
+    
+    if not has_changes:
+        # Idempotent no-op: payload matches current state, nothing to persist.
+        return berita_acara
     
     db.commit()
     db.refresh(berita_acara)
