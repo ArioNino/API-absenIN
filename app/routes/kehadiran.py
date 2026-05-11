@@ -1,15 +1,39 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import logging
+from typing import List, Literal, Optional
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
-from typing import List
+from app.config import get_settings
 from app.database import get_db
 from app.models.kehadiran import Kehadiran
 from app.models.berita_acara_perkuliahan import BeritaAcaraPerkuliahan
+from app.models.kelas_mahasiswa import KelasMahasiswa
 from app.models.mahasiswa import Mahasiswa
 from app.models.user import User
-from app.schemas.kehadiran import KehadiranCreate, KehadiranUpdate, KehadiranResponse
+from app.schemas.kehadiran import (
+    FaceRecognitionResponse,
+    FaceRecognitionResult,
+    KehadiranCreate,
+    KehadiranResponse,
+    KehadiranUpdate,
+    RecognizedMahasiswa,
+    StatusKehadiran,
+)
+from app.services.face_recognition import (
+    FaceRecognitionService,
+    FaceRecognitionUnavailable,
+    InvalidImageError,
+)
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/kehadiran", tags=["Kehadiran"])
+logger = logging.getLogger(__name__)
+settings = get_settings()
+face_service = FaceRecognitionService(
+    model_dir=settings.FACE_MODEL_DIR,
+    method=settings.FACE_MODEL_METHOD,
+    threshold=settings.FACE_RECOGNITION_THRESHOLD,
+)
 
 
 @router.get("/", response_model=List[KehadiranResponse])
@@ -44,6 +68,171 @@ def get_kehadiran_by_mahasiswa(
     """Get all kehadiran for a specific mahasiswa."""
     kehadiran = db.query(Kehadiran).filter(Kehadiran.id_mahasiswa == mahasiswa_id).all()
     return kehadiran
+
+
+@router.post("/recognize", response_model=FaceRecognitionResponse)
+async def recognize_kehadiran(
+    id_bap: int = Form(...),
+    file: UploadFile = File(...),
+    mode: Literal["single", "multi"] = Form("single"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Recognize faces from an uploaded photo and mark attendance as Hadir."""
+    bap = db.query(BeritaAcaraPerkuliahan).filter(
+        BeritaAcaraPerkuliahan.id == id_bap
+    ).first()
+    if not bap:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Berita Acara Perkuliahan tidak ditemukan"
+        )
+
+    if file.content_type and not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File upload harus berupa gambar"
+        )
+
+    image_bytes = await file.read()
+    if not image_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File upload kosong"
+        )
+
+    try:
+        recognized_faces = face_service.recognize(image_bytes=image_bytes, mode=mode)
+    except InvalidImageError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        ) from exc
+    except FaceRecognitionUnavailable as exc:
+        logger.exception("Face recognition unavailable")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(exc)
+        ) from exc
+    except Exception as exc:
+        logger.exception("Face recognition failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Gagal memproses absensi wajah"
+        ) from exc
+
+    class_has_members = db.query(KelasMahasiswa).filter(
+        KelasMahasiswa.kelas_id == bap.id_kelas
+    ).first() is not None
+
+    results: List[FaceRecognitionResult] = []
+    changed_records: List[Kehadiran] = []
+
+    for face in recognized_faces:
+        if not face.nim:
+            results.append(_build_recognition_result(
+                face=face,
+                status_text="low_confidence",
+                message="Confidence di bawah threshold, kehadiran tidak dicatat"
+            ))
+            continue
+
+        mahasiswa = db.query(Mahasiswa).filter(Mahasiswa.nim == face.nim).first()
+        if not mahasiswa:
+            results.append(_build_recognition_result(
+                face=face,
+                status_text="unregistered",
+                message="Mahasiswa tidak ditemukan di database"
+            ))
+            continue
+
+        if class_has_members:
+            membership = db.query(KelasMahasiswa).filter(
+                KelasMahasiswa.kelas_id == bap.id_kelas,
+                KelasMahasiswa.mahasiswa_id == mahasiswa.id_mahasiswa,
+            ).first()
+            if not membership:
+                results.append(_build_recognition_result(
+                    face=face,
+                    mahasiswa=mahasiswa,
+                    status_text="not_in_class",
+                    message="Mahasiswa tidak terdaftar pada kelas BAP"
+                ))
+                continue
+
+        existing = db.query(Kehadiran).filter(
+            Kehadiran.id_bap == id_bap,
+            Kehadiran.id_mahasiswa == mahasiswa.id_mahasiswa,
+        ).first()
+
+        if existing:
+            if existing.status != StatusKehadiran.HADIR.value:
+                existing.status = StatusKehadiran.HADIR.value
+                existing.keterangan = "Diperbarui otomatis dari absensi wajah"
+                changed_records.append(existing)
+                status_text = "updated"
+                message = "Kehadiran diperbarui menjadi Hadir"
+            else:
+                status_text = "already_recorded"
+                message = "Kehadiran sudah tercatat sebagai Hadir"
+            kehadiran = existing
+        else:
+            kehadiran = Kehadiran(
+                id_bap=id_bap,
+                id_mahasiswa=mahasiswa.id_mahasiswa,
+                status=StatusKehadiran.HADIR.value,
+                keterangan="Dicatat otomatis dari absensi wajah",
+            )
+            db.add(kehadiran)
+            changed_records.append(kehadiran)
+            status_text = "recorded"
+            message = "Kehadiran berhasil dicatat"
+
+        results.append(_build_recognition_result(
+            face=face,
+            mahasiswa=mahasiswa,
+            status_text=status_text,
+            message=message,
+            kehadiran=kehadiran,
+        ))
+
+    if changed_records:
+        db.commit()
+        for record in changed_records:
+            db.refresh(record)
+
+        for result in results:
+            if result.kehadiran_id is None and result.mahasiswa is not None:
+                record = db.query(Kehadiran).filter(
+                    Kehadiran.id_bap == id_bap,
+                    Kehadiran.id_mahasiswa == result.mahasiswa.id_mahasiswa,
+                ).first()
+                if record:
+                    result.kehadiran_id = record.id
+    else:
+        db.rollback()
+
+    return FaceRecognitionResponse(id_bap=id_bap, mode=mode, results=results)
+
+
+def _build_recognition_result(
+    face,
+    status_text: str,
+    message: str,
+    mahasiswa: Optional[Mahasiswa] = None,
+    kehadiran: Optional[Kehadiran] = None,
+) -> FaceRecognitionResult:
+    return FaceRecognitionResult(
+        face_index=face.face_index,
+        nim=face.nim,
+        mahasiswa=RecognizedMahasiswa.model_validate(mahasiswa) if mahasiswa else None,
+        confidence=face.confidence,
+        detection_confidence=face.detection_confidence,
+        bbox=face.bbox,
+        status=status_text,
+        kehadiran_id=kehadiran.id if kehadiran else None,
+        message=message,
+    )
 
 
 @router.get("/{kehadiran_id}", response_model=KehadiranResponse)

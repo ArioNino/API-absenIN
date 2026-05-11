@@ -28,22 +28,6 @@ def get_all_mahasiswa(
     return mahasiswa
 
 
-@router.get("/{mahasiswa_id}", response_model=MahasiswaResponse)
-def get_mahasiswa(
-    mahasiswa_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """Get a specific mahasiswa by ID."""
-    mahasiswa = db.query(Mahasiswa).filter(Mahasiswa.id_mahasiswa == mahasiswa_id).first()
-    if not mahasiswa:
-        raise HTTPException(    
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Mahasiswa tidak ditemukan"
-        )
-    return mahasiswa
-
-
 @router.get("/nim/{nim}", response_model=MahasiswaResponse)
 def get_mahasiswa_by_nim(
     nim: str,
@@ -52,6 +36,22 @@ def get_mahasiswa_by_nim(
 ):
     """Get a specific mahasiswa by NIM."""
     mahasiswa = db.query(Mahasiswa).filter(Mahasiswa.nim == nim).first()
+    if not mahasiswa:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mahasiswa tidak ditemukan"
+        )
+    return mahasiswa
+
+
+@router.get("/{mahasiswa_id}", response_model=MahasiswaResponse)
+def get_mahasiswa(
+    mahasiswa_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Get a specific mahasiswa by ID."""
+    mahasiswa = db.query(Mahasiswa).filter(Mahasiswa.id_mahasiswa == mahasiswa_id).first()
     if not mahasiswa:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -23,6 +23,11 @@ class Settings(BaseSettings):
     # the combination of wildcard origin + credentials.
     CORS_ORIGINS: str = "*"
 
+    # Face recognition
+    FACE_MODEL_DIR: str = "model"
+    FACE_MODEL_METHOD: str = "mtcnn"
+    FACE_RECOGNITION_THRESHOLD: float = 0.60
+
     @property
     def CORS_ORIGINS_LIST(self) -> List[str]:
         """Parse CORS_ORIGINS string into a clean list."""

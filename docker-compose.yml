@@ -37,6 +37,9 @@ services:
       ACCESS_TOKEN_EXPIRE_MINUTES: 30
       APP_NAME: AbsenIN API
       APP_DEBUG: ${DEBUG:-True}
+      FACE_MODEL_DIR: ${FACE_MODEL_DIR:-model}
+      FACE_MODEL_METHOD: ${FACE_MODEL_METHOD:-mtcnn}
+      FACE_RECOGNITION_THRESHOLD: ${FACE_RECOGNITION_THRESHOLD:-0.60}
     ports:
       - "${API_PORT:-8000}:8000"
     volumes:
