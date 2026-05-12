@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 
 # Import routers
-from app.routes import auth, mahasiswa, matakuliah, berita_acara, kehadiran, kelas
+from app.routes import auth, mahasiswa, matakuliah, berita_acara, kehadiran, kelas, face_recognition
 
 settings = get_settings()
 
@@ -33,7 +33,7 @@ app.include_router(matakuliah.router)
 app.include_router(kelas.router)
 app.include_router(berita_acara.router)
 app.include_router(kehadiran.router)
-
+app.include_router(face_recognition.router)
 @app.get("/")
 def read_root():
     """Root endpoint - Hello World"""
