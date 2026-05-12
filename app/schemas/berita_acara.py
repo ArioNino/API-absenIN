@@ -3,7 +3,7 @@ from typing import Optional
 from datetime import date, time
 
 class BeritaAcaraBase(BaseModel):
-    id_dosen: int
+    # id_dosen: int
     id_kelas: int
     id_mata_kuliah: str
     pertemuan_ke: int

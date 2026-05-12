@@ -7,7 +7,11 @@ from app.models.dosen import Dosen
 from app.models.kelas import Kelas
 from app.models.matakuliah import MataKuliah
 from app.models.user import User
-from app.schemas.berita_acara import BeritaAcaraCreate, BeritaAcaraUpdate, BeritaAcaraResponse
+from app.schemas.berita_acara import (
+    BeritaAcaraCreate,
+    BeritaAcaraUpdate,
+    BeritaAcaraResponse
+)
 from app.utils.auth import get_current_user
 
 router = APIRouter(prefix="/berita-acara", tags=["Berita Acara Perkuliahan"])
@@ -20,7 +24,6 @@ def get_all_berita_acara(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all berita acara with pagination."""
     berita_acara = db.query(BeritaAcaraPerkuliahan).offset(skip).limit(limit).all()
     return berita_acara
 
@@ -31,10 +34,10 @@ def get_berita_acara_by_dosen(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all berita acara for a specific dosen."""
     berita_acara = db.query(BeritaAcaraPerkuliahan).filter(
         BeritaAcaraPerkuliahan.id_dosen == dosen_id
     ).all()
+
     return berita_acara
 
 
@@ -44,10 +47,10 @@ def get_berita_acara_by_kelas(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get all berita acara for a specific kelas."""
     berita_acara = db.query(BeritaAcaraPerkuliahan).filter(
         BeritaAcaraPerkuliahan.id_kelas == kelas_id
     ).all()
+
     return berita_acara
 
 
@@ -57,15 +60,16 @@ def get_berita_acara(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get a specific berita acara."""
     berita_acara = db.query(BeritaAcaraPerkuliahan).filter(
         BeritaAcaraPerkuliahan.id == bap_id
     ).first()
+
     if not berita_acara:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Berita Acara tidak ditemukan"
         )
+
     return berita_acara
 
 
@@ -75,48 +79,54 @@ def create_berita_acara(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new berita acara."""
-    # Verify dosen exists
-    dosen = db.query(Dosen).filter(Dosen.id == bap_data.id_dosen).first()
+    dosen = db.query(Dosen).filter(
+        Dosen.id_user == current_user.id
+    ).first()
+
     if not dosen:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Dosen tidak ditemukan"
+            detail="Data dosen tidak ditemukan untuk user ini"
         )
-    
-    # Verify kelas exists
+
     kelas = db.query(Kelas).filter(Kelas.id == bap_data.id_kelas).first()
+
     if not kelas:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Kelas tidak ditemukan"
         )
-    
-    # Verify mata kuliah exists
+
     mata_kuliah = db.query(MataKuliah).filter(
         MataKuliah.kode_mk == bap_data.id_mata_kuliah
     ).first()
+
     if not mata_kuliah:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Mata Kuliah tidak ditemukan"
         )
-    
-    # Check if BAP already exists for this kelas and pertemuan
+
     existing = db.query(BeritaAcaraPerkuliahan).filter(
         BeritaAcaraPerkuliahan.id_kelas == bap_data.id_kelas,
         BeritaAcaraPerkuliahan.pertemuan_ke == bap_data.pertemuan_ke
     ).first()
+
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Berita Acara untuk pertemuan ke-{bap_data.pertemuan_ke} sudah ada"
         )
-    
-    berita_acara = BeritaAcaraPerkuliahan(**bap_data.model_dump())
+
+    berita_acara = BeritaAcaraPerkuliahan(
+        id_dosen=dosen.id,
+        **bap_data.model_dump()
+    )
+
     db.add(berita_acara)
     db.commit()
     db.refresh(berita_acara)
+
     return berita_acara
 
 
@@ -127,37 +137,30 @@ def update_berita_acara(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Update a berita acara."""
     berita_acara = db.query(BeritaAcaraPerkuliahan).filter(
         BeritaAcaraPerkuliahan.id == bap_id
     ).first()
+
     if not berita_acara:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Berita Acara tidak ditemukan"
         )
-    
-    # Check if there's any data to update (dirty check)
+
     update_data = bap_data.model_dump(exclude_unset=True)
+
     if not update_data:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Tidak ada data yang diupdate. Minimal satu field harus diisi."
         )
-    
-    # Check if any field actually changed
-    has_changes = False
+
     for field, value in update_data.items():
-        if getattr(berita_acara, field) != value:
-            has_changes = True
-            setattr(berita_acara, field, value)
-    
-    if not has_changes:
-        # Idempotent no-op: payload matches current state, nothing to persist.
-        return berita_acara
-    
+        setattr(berita_acara, field, value)
+
     db.commit()
     db.refresh(berita_acara)
+
     return berita_acara
 
 
@@ -167,16 +170,17 @@ def delete_berita_acara(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Delete a berita acara."""
     berita_acara = db.query(BeritaAcaraPerkuliahan).filter(
         BeritaAcaraPerkuliahan.id == bap_id
     ).first()
+
     if not berita_acara:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Berita Acara tidak ditemukan"
         )
-    
+
     db.delete(berita_acara)
     db.commit()
+
     return None
