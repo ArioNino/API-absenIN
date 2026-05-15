@@ -5,6 +5,7 @@ from enum import Enum
 
 class StatusKehadiran(str, Enum):
     HADIR = "Hadir"
+    TERLAMBAT = "Terlambat"
     IZIN = "Izin"
     SAKIT = "Sakit"
     ALPHA = "Alpha"
