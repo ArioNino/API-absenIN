@@ -2,8 +2,24 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import date, time
 
+
+class MataKuliahNested(BaseModel):
+    kode_mk: str
+    nama_mk: str
+
+    class Config:
+        from_attributes = True
+
+
+class KelasNested(BaseModel):
+    id: int
+    nama_kelas: str
+
+    class Config:
+        from_attributes = True
+
+
 class BeritaAcaraBase(BaseModel):
-    # id_dosen: int
     id_kelas: int
     id_mata_kuliah: str
     pertemuan_ke: int
@@ -27,6 +43,8 @@ class BeritaAcaraUpdate(BaseModel):
 
 class BeritaAcaraResponse(BeritaAcaraBase):
     id: int
-    
+    mata_kuliah: Optional[MataKuliahNested] = None
+    kelas: Optional[KelasNested] = None
+
     class Config:
         from_attributes = True

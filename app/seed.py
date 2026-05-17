@@ -4,7 +4,7 @@ from app.seeders.dosen_seeder import DosenSeeder
 from app.seeders.matakuliah_seeder import MataKuliahSeeder
 from app.seeders.kelas_seeder import KelasSeeder
 from app.seeders.mahasiswa_seeder import MahasiswaSeeder
-
+from app.seeders.kelas_mahasiswa_seeder import KelasMahasiswaSeeder
 
 def run_all_seeders():
     """Run all seeders in order."""
@@ -14,6 +14,7 @@ def run_all_seeders():
         ("MataKuliah", MataKuliahSeeder),
         ("Kelas", KelasSeeder),
         ("Mahasiswa", MahasiswaSeeder),
+        ("KelasMahasiswa", KelasMahasiswaSeeder)
     ]
 
     print("=" * 60)
@@ -37,3 +38,4 @@ def run_all_seeders():
 
 if __name__ == "__main__":
     run_all_seeders()
+

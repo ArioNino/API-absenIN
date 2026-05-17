@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.database import get_db
 from app.models.berita_acara_perkuliahan import BeritaAcaraPerkuliahan
@@ -24,7 +24,17 @@ def get_all_berita_acara(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    berita_acara = db.query(BeritaAcaraPerkuliahan).offset(skip).limit(limit).all()
+    berita_acara = (
+        db.query(BeritaAcaraPerkuliahan)
+        .options(
+            joinedload(BeritaAcaraPerkuliahan.mata_kuliah),
+            joinedload(BeritaAcaraPerkuliahan.kelas),
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
     return berita_acara
 
 
@@ -60,16 +70,15 @@ def get_berita_acara(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    berita_acara = db.query(BeritaAcaraPerkuliahan).filter(
-        BeritaAcaraPerkuliahan.id == bap_id
-    ).first()
-
-    if not berita_acara:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Berita Acara tidak ditemukan"
-        )
-
+    berita_acara = (
+    db.query(BeritaAcaraPerkuliahan)
+    .options(
+        joinedload(BeritaAcaraPerkuliahan.mata_kuliah),
+        joinedload(BeritaAcaraPerkuliahan.kelas),
+    )
+    .filter(BeritaAcaraPerkuliahan.id == bap_id)
+    .first()
+)
     return berita_acara
 
 
@@ -184,3 +193,4 @@ def delete_berita_acara(
     db.commit()
 
     return None
+
