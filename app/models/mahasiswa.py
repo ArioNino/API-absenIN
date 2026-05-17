@@ -8,7 +8,7 @@ class Mahasiswa(Base):
     id_mahasiswa = Column(Integer, primary_key=True, index=True)
     nim = Column(String(11), unique=True, nullable=False)
     nama = Column(String(100))
-    kelas = Column(String(100))
+    # kelas = Column(String(100))
     prodi = Column(String(100))
     
     # Relationships
