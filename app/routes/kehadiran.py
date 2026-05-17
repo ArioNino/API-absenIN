@@ -60,6 +60,57 @@ def get_kehadiran_by_bap(
     kehadiran = db.query(Kehadiran).filter(Kehadiran.id_bap == bap_id).all()
     return kehadiran
 
+@router.get("/bap/{bap_id}/rekap")
+def get_rekap_kehadiran_bap(
+    bap_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    bap = db.query(BeritaAcaraPerkuliahan).filter(
+        BeritaAcaraPerkuliahan.id == bap_id
+    ).first()
+
+    if not bap:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="BAP tidak ditemukan",
+        )
+
+    mahasiswa_kelas = (
+        db.query(Mahasiswa)
+        .join(
+            KelasMahasiswa,
+            KelasMahasiswa.mahasiswa_id == Mahasiswa.id_mahasiswa,
+        )
+        .filter(KelasMahasiswa.kelas_id == bap.id_kelas)
+        .all()
+    )
+
+    kehadiran_list = db.query(Kehadiran).filter(
+        Kehadiran.id_bap == bap_id
+    ).all()
+
+    kehadiran_map = {
+        item.id_mahasiswa: item
+        for item in kehadiran_list
+    }
+
+    result = []
+
+    for mahasiswa in mahasiswa_kelas:
+        kehadiran = kehadiran_map.get(mahasiswa.id_mahasiswa)
+
+        result.append({
+            "id_kehadiran": kehadiran.id if kehadiran else None,
+            "id_mahasiswa": mahasiswa.id_mahasiswa,
+            "nim": mahasiswa.nim,
+            "nama": mahasiswa.nama,
+            "prodi": mahasiswa.prodi,
+            "status": kehadiran.status if kehadiran else "Alpha",
+            "keterangan": kehadiran.keterangan if kehadiran else None,
+        })
+
+    return result
 
 @router.get("/mahasiswa/{mahasiswa_id}", response_model=List[KehadiranResponse])
 def get_kehadiran_by_mahasiswa(
